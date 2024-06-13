@@ -46,9 +46,9 @@ index_flat = faiss.IndexFlatL2(dim)
 index_flat.add(gist_base)
 
 # IVF 인덱스 생성 및 학습
-nprove = 100  # Number of clusters
+nlist = 100  # Number of clusters
 quantizer = faiss.IndexFlatL2(dim)
-index_ivf = faiss.IndexIVFFlat(quantizer, dim, nprove)
+index_ivf = faiss.IndexIVFFlat(quantizer, dim, nlist)
 index_ivf.train(gist_learn)
 index_ivf.add(gist_base)
 
@@ -73,30 +73,41 @@ def search_and_measure(index, queries, groundtruth, k=5):
     
     return avg_recall, avg_query_time
 
-k_values = [1, 5, 10, 20, 50, 100]  # 다양한 k 값
+# IVF의 nprobe 값 변경에 따른 성능 측정
+nprobe_values = [1, 2, 5, 10, 20, 50, 100]
+ivf_results = []
 
-# 인덱스별로 성능 측정
-results = {'FlatL2': [], 'IVF': [], 'HNSW': []}
-indices = [index_flat, index_ivf, index_hnsw]
+for nprobe in nprobe_values:
+    index_ivf.nprobe = nprobe
+    recall, query_time = search_and_measure(index_ivf, gist_query, gist_groundtruth, k=5)
+    ivf_results.append((recall, query_time))
 
-for k in k_values:
-    for idx, name in zip(indices, results.keys()):
-        recall, query_time = search_and_measure(idx, gist_query, gist_groundtruth, k)
-        results[name].append((recall, query_time))
+# HNSW의 efSearch 값 변경에 따른 성능 측정
+efSearch_values = [10, 20, 50, 100, 200, 500, 1000]
+hnsw_results = []
 
-# Recall@k 및 Query Time 시각화
+for efSearch in efSearch_values:
+    index_hnsw.hnsw.efSearch = efSearch
+    recall, query_time = search_and_measure(index_hnsw, gist_query, gist_groundtruth, k=5)
+    hnsw_results.append((recall, query_time))
+
+# Recall 및 Query Time 시각화
 plt.figure(figsize=(12, 8))
 
-for name in results.keys():
-    recall_values = [results[name][i][0] for i in range(len(k_values))]
-    query_time_values = [results[name][i][1] for i in range(len(k_values))]
-    
-    plt.plot(query_time_values, recall_values, label=name, marker='o')
+# IVF 결과 시각화
+ivf_recall_values = [result[0] for result in ivf_results]
+ivf_query_time_values = [result[1] for result in ivf_results]
+plt.plot(ivf_query_time_values, ivf_recall_values, label='IVF (nprobe)', marker='o')
+
+# HNSW 결과 시각화
+hnsw_recall_values = [result[0] for result in hnsw_results]
+hnsw_query_time_values = [result[1] for result in hnsw_results]
+plt.plot(hnsw_query_time_values, hnsw_recall_values, label='HNSW (efSearch)', marker='x')
 
 plt.xscale('log')
 plt.xlabel('Query time, ms')
 plt.ylabel('Recall')
-plt.title('Recall vs Query Time for different indices')
+plt.title('Recall vs Query Time for IVF (nprobe) and HNSW (efSearch)')
 plt.legend()
 plt.grid(True)
 plt.savefig('GIST1M', format='png')
