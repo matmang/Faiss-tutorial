@@ -98,6 +98,8 @@ for nprobe in nprobe_values:
     recall, query_time = search_and_measure(index_ivf, gist_query, gist_groundtruth, k=5)
     ivf_results.append((recall, query_time))
 
+print("IVF 검색 완료")
+
 # HNSW의 efSearch 값 변경에 따른 성능 측정
 efSearch_values = [10, 20, 50, 100, 200, 500, 1000, 2000]
 hnsw_results = []
@@ -107,21 +109,33 @@ for efSearch in efSearch_values:
     recall, query_time = search_and_measure(index_hnsw, gist_query, gist_groundtruth, k=5)
     hnsw_results.append((recall, query_time))
 
+print("HNSW 검색 완료")
+
+# PQ의 M 값 변경에 따른 성능 측정
 M_values = [2, 3, 4, 5, 6, 8, 10, 12]
 pq_results = []
 
 for M in M_values:
-    index_pq.pq.m = M
+    index_pq = faiss.IndexPQ(dim, M, 8)
+    index_pq.train(gist_learn)
+    index_pq.add(gist_base)
     recall, query_time = search_and_measure(index_pq, gist_query, gist_groundtruth, k=5)
     pq_results.append((recall, query_time))
 
+print("PQ 검색 완료")
+
+# LSH의 hash_bit_count 값 변경에 따른 성능 측정
 hash_bit_count_values = [2, 4, 8, 16, 32, 64, 128, 256]
 lsh_results = []
 
 for hash_bit_count in hash_bit_count_values:
-    index_lsh.nbits = hash_bit_count
+    index_lsh = faiss.IndexLSH(dim, hash_bit_count)
+    index_lsh.train(gist_learn)
+    index_lsh.add(gist_base)
     recall, query_time = search_and_measure(index_lsh, gist_query, gist_groundtruth, k=5)
-    pq_results.append((recall, query_time))
+    lsh_results.append((recall, query_time))
+
+print("LSH 검색 완료")
 
 # Recall 및 Query Time 시각화
 plt.figure(figsize=(12, 8))
@@ -149,8 +163,8 @@ plt.plot(lsh_query_time_values, lsh_recall_values, label='LSH (hash_bit_count)',
 plt.xscale('log')
 plt.xlabel('Query time, ms')
 plt.ylabel('Recall')
-plt.title('Recall vs Query Time for IVF (nprobe) and HNSW (efSearch)')
+plt.title('Recall vs Query Time for indices')
 plt.legend()
 plt.grid(True)
-plt.savefig('GIST1M.png', format='png')
+plt.savefig('GIST1M_final.png', format='png')
 plt.show()
