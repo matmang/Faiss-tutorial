@@ -112,7 +112,7 @@ for efSearch in efSearch_values:
 print("HNSW 검색 완료")
 
 # PQ의 M 값 변경에 따른 성능 측정
-M_values = [2, 3, 4, 5, 6, 8, 10, 12]
+M_values = [40, 48, 60, 64, 80, 96, 120, 160]
 pq_results = []
 
 for M in M_values:
