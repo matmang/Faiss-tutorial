@@ -129,7 +129,7 @@ hash_bit_count_values = [2, 4, 8, 16, 32, 64, 128, 256]
 lsh_results = []
 
 for hash_bit_count in hash_bit_count_values:
-    index_lsh = faiss.IndexLSH(dim, hash_bit_count)
+    index_lsh = faiss.IndexLSH(dim, hash_bit_count * dim)
     index_lsh.train(gist_learn)
     index_lsh.add(gist_base)
     recall, query_time = search_and_measure(index_lsh, gist_query, gist_groundtruth, k=5)
