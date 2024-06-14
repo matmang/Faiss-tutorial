@@ -42,8 +42,8 @@ print(f'Groundtruth shape: {gist_groundtruth.shape}')
 dim = gist_base.shape[1]
 
 # FlatL2 인덱스 생성 및 학습
-index_flat = faiss.IndexFlatL2(dim)
-index_flat.add(gist_base)
+# index_flat = faiss.IndexFlatL2(dim)
+# index_flat.add(gist_base)
 
 # IVF 인덱스 생성 및 학습
 nlist = 200  # Number of clusters
@@ -52,17 +52,25 @@ index_ivf = faiss.IndexIVFFlat(quantizer, dim, nlist)
 index_ivf.train(gist_learn)
 index_ivf.add(gist_base)
 
+print("IVF 생성 완료")
+
 # HNSW 인덱스 생성 및 학습
-index_hnsw = faiss.IndexHNSWFlat(dim, 32)
+index_hnsw = faiss.IndexHNSWFlat(dim, 16)
 index_hnsw.add(gist_base)
+
+print("HNSW 생성 완료")
 
 index_pq = faiss.IndexPQ(dim, 2, 8)
 index_pq.train(gist_learn)
 index_pq.add(gist_base)
 
+print("PQ 생성 완료")
+
 index_lsh = faiss.IndexLSH(dim, 2)
 index_lsh.train(gist_learn)
 index_lsh.add(gist_base)
+
+print("LSH 생성 완료")
 
 def search_and_measure(index, queries, groundtruth, k=5):
     start_time = time.time()
@@ -71,10 +79,10 @@ def search_and_measure(index, queries, groundtruth, k=5):
     
     recall = []
     for i, neighbors in enumerate(indices):
-        gt = set(groundtruth[i])
+        gt = set(groundtruth[i][:k])
         retrieved = set(neighbors)
         correct = len(gt & retrieved)
-        recall.append(correct / len(gt))
+        recall.append(correct / k)
     
     avg_recall = np.mean(recall)
     avg_query_time = query_time / len(queries)
@@ -99,7 +107,7 @@ for efSearch in efSearch_values:
     recall, query_time = search_and_measure(index_hnsw, gist_query, gist_groundtruth, k=5)
     hnsw_results.append((recall, query_time))
 
-M_values = [2, 4, 8, 16, 32, 64, 128]
+M_values = [2, 3, 4, 5, 6, 8, 10, 12]
 pq_results = []
 
 for M in M_values:
@@ -107,7 +115,7 @@ for M in M_values:
     recall, query_time = search_and_measure(index_pq, gist_query, gist_groundtruth, k=5)
     pq_results.append((recall, query_time))
 
-hash_bit_count_values = [2, 4, 8, 16, 32, 64, 128]
+hash_bit_count_values = [2, 4, 8, 16, 32, 64, 128, 256]
 lsh_results = []
 
 for hash_bit_count in hash_bit_count_values:
