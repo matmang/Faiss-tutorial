@@ -46,7 +46,7 @@ dim = gist_base.shape[1]
 # index_flat.add(gist_base)
 
 # IVF 인덱스 생성 및 학습
-nlist = 200  # Number of clusters
+nlist = 1000  # Number of clusters
 quantizer = faiss.IndexFlatL2(dim)
 index_ivf = faiss.IndexIVFFlat(quantizer, dim, nlist)
 index_ivf.train(gist_learn)
@@ -56,21 +56,22 @@ print("IVF 생성 완료")
 
 # HNSW 인덱스 생성 및 학습
 index_hnsw = faiss.IndexHNSWFlat(dim, 16)
+index_hnsw.hnsw.efConstruction = 500
 index_hnsw.add(gist_base)
 
 print("HNSW 생성 완료")
 
-index_pq = faiss.IndexPQ(dim, 2, 8)
-index_pq.train(gist_learn)
-index_pq.add(gist_base)
+# index_pq = faiss.IndexPQ(dim, 2, 8)
+# index_pq.train(gist_learn)
+# index_pq.add(gist_base)
 
-print("PQ 생성 완료")
+# print("PQ 생성 완료")
 
-index_lsh = faiss.IndexLSH(dim, 2)
-index_lsh.train(gist_learn)
-index_lsh.add(gist_base)
+# index_lsh = faiss.IndexLSH(dim, 2)
+# index_lsh.train(gist_learn)
+# index_lsh.add(gist_base)
 
-print("LSH 생성 완료")
+# print("LSH 생성 완료")
 
 def search_and_measure(index, queries, groundtruth, k=5):
     start_time = time.time()
@@ -90,7 +91,7 @@ def search_and_measure(index, queries, groundtruth, k=5):
     return avg_recall, avg_query_time
 
 # IVF의 nprobe 값 변경에 따른 성능 측정
-nprobe_values = [1, 2, 5, 10, 20, 50, 100, 200]
+nprobe_values = [10, 20, 50, 100, 200, 300, 400, 500]
 ivf_results = []
 
 for nprobe in nprobe_values:
@@ -124,7 +125,7 @@ for M in M_values:
 
 print("PQ 검색 완료")
 
-# LSH의 hash_bit_count 값 변경에 따른 성능 측정
+# # LSH의 hash_bit_count 값 변경에 따른 성능 측정
 hash_bit_count_values = [2, 4, 8, 16, 32, 64, 128, 256]
 lsh_results = []
 
